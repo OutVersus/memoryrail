@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 (2026-10-10)
 
 - Setup guide for OpenAI Codex and GitHub Copilot (VS Code, CLI, cloud agent): `docs/CLIENTS.md`
 - `sync --also <path>` writes the managed block into extra files, e.g. `.github/copilot-instructions.md`; paths outside the repo are refused

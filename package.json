@@ -1,6 +1,6 @@
 {
   "name": "memoryrail",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Git-native project memory for coding agents. Plain Markdown in your repo, readable by people and any MCP-capable agent.",
   "license": "MIT",
   "type": "module",
