@@ -12,9 +12,9 @@ import { refOf } from "./refs.js";
 import { recall, renderMemory } from "./search.js";
 import { Store, DIR_NAME, initRoot, openStore, writeConfig } from "./store.js";
 import { sync } from "./sync.js";
+import { VERSION } from "./version.js";
 import { isMemoryType, MEMORY_TYPES, type Memory, type MemoryType } from "./types.js";
 
-const VERSION = "0.1.0";
 
 const HELP = `memoryrail ${VERSION} — git-native project memory for coding agents
 

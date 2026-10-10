@@ -20,3 +20,4 @@ export { doctor } from "./doctor.js";
 export type { Check } from "./doctor.js";
 export { readConfig, writeConfig } from "./store.js";
 export type { Config } from "./store.js";
+export { VERSION } from "./version.js";

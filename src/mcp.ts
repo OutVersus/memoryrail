@@ -7,6 +7,7 @@ import { refOf } from "./refs.js";
 import { recall } from "./search.js";
 import type { Store } from "./store.js";
 import { DURABLE_TYPES, MEMORY_TYPES } from "./types.js";
+import { VERSION } from "./version.js";
 
 const typeEnum = z.enum(MEMORY_TYPES);
 
@@ -28,7 +29,7 @@ function guard<A>(fn: (args: A) => string): (args: A) => ReturnType<typeof text>
 }
 
 export function createServer(store: Store): McpServer {
-  const server = new McpServer({ name: "memoryrail", version: "0.1.0" });
+  const server = new McpServer({ name: "memoryrail", version: VERSION });
 
   server.tool(
     "recall",
