@@ -17,7 +17,7 @@ _Generated from `.memoryrail/`. Do not edit between these markers: change the me
 - [GOT-f758] **Windows installs can miss rollup's native binary** — npm optional-dependency bug (npm/cli#4828): vitest fails with 'Cannot find module @rollup/rollup-win32-x64-msvc'. Fix: npm install --no-save @rollup/rollup-win32-x64-msvc@<rollup version>.
 
 ### Open threads
-- [THR-9171] **Make the memoryrail repo public, then publish to npm** — Repo was created private on purpose. When it goes public: add a GitHub link to the site footer in memoryrail-si, and update the README install section once the package is on npm. The site lives in the separate private repo memoryrail-si.
+- [THR-4c30] **Publish releases by hand until NPM_TOKEN is set** — 0.1.0 was published manually (npm login with 2FA, then npm publish --access public). The release workflow publishes on a v* tag only when the NPM_TOKEN repo secret exists, and skips if the version is already on npm. To automate: create an npm automation token and add it as the N…
 - [THR-e74a] **Publish to npm and add Codex/Copilot setup docs** — Package is not yet published; README install section says so. Update once published.
 
 How to use this memory:

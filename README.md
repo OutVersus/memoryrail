@@ -1,6 +1,10 @@
 # MemoryRail
 
-**Git-native project memory for coding agents.**
+[![npm](https://img.shields.io/npm/v/memoryrail)](https://www.npmjs.com/package/memoryrail)
+[![CI](https://github.com/OutVersus/memoryrail/actions/workflows/ci.yml/badge.svg)](https://github.com/OutVersus/memoryrail/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+**Git-native project memory for coding agents.** Website: [memoryrail.si](https://memoryrail.si)
 
 Decisions, constraints, gotchas and failed attempts live in your repo as plain Markdown. People can read and review them in a PR. Any agent that speaks MCP (Claude Code, Cursor, Codex, Copilot, Aider, ...) can read and write them, and gets warned before it repeats a mistake.
 
@@ -45,14 +49,13 @@ Six types: `decision`, `constraint`, `gotcha`, `attempt` (tried and failed, with
 
 ## Install
 
-Not published to npm yet. From a clone:
+Needs Node 20 or newer.
 
 ```sh
-git clone https://github.com/OutVersus/memoryrail && cd memoryrail
-npm install && npm run build && npm link   # puts `memoryrail` on your PATH
+npm install -g memoryrail    # puts `memoryrail` on your PATH
 ```
 
-Once published, every `memoryrail ...` below can be run as `npx memoryrail ...`.
+Or run any command without installing, as `npx memoryrail <command>`. Note that `memoryrail install` registers the server as the command `memoryrail`, so that needs the global install; use `memoryrail install claude --npx` to register `npx -y memoryrail serve` instead.
 
 ## Quick start
 
@@ -157,6 +160,7 @@ memoryrail precheck --staged --fail || echo "Review the memories above before co
 - `maybe-stale` relies on git history; it is skipped outside a git repository.
 - **The secret scanner is a pattern check, not a guarantee.** It catches common key formats and `password = ...` assignments, and it will miss secrets in unusual shapes. Treat it as a safety net, and don't paste credentials into memory.
 - `install` configures Claude Code and Cursor only. Other MCP clients need the config added by hand (see above).
+- This is an early release (0.x). The format and commands may change before 1.0, and it has had little use on real projects so far. Please open issues.
 - The memory is only as good as what agents and people record. MemoryRail makes recording cheap and reviewable; it does not do it for you.
 
 ## Library

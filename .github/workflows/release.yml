@@ -28,10 +28,15 @@ jobs:
         run: |
           v="$(node -p "require('./package.json').version")"
           [ "v$v" = "${GITHUB_REF_NAME}" ] || { echo "tag ${GITHUB_REF_NAME} does not match package.json version v$v"; exit 1; }
-      - run: npm publish --provenance --access public
+      - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then echo "NPM_TOKEN is not set; skipping npm publish."; exit 0; fi
+          v="$(node -p "require('./package.json').version")"
+          if npm view "memoryrail@$v" version >/dev/null 2>&1; then echo "memoryrail@$v is already on npm; skipping."; exit 0; fi
+          npm publish --provenance --access public
       - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --generate-notes
+        run: gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1 || gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --generate-notes

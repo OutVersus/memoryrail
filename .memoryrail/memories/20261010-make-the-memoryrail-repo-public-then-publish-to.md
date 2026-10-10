@@ -2,9 +2,9 @@
 id: "20261010-make-the-memoryrail-repo-public-then-publish-to"
 type: "thread"
 title: "Make the memoryrail repo public, then publish to npm"
-status: "active"
+status: "resolved"
 created: "2026-10-10T01:44:07.697Z"
-updated: "2026-10-10T01:44:07.697Z"
+updated: "2026-10-10T02:24:21.049Z"
 tags: ["release"]
 links: []
 ---
