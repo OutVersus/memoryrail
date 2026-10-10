@@ -6,7 +6,7 @@
 - `sync --also <path>` writes the managed block into extra files, e.g. `.github/copilot-instructions.md`; paths outside the repo are refused
 - `doctor` warns when `AGENTS.md` exceeds Codex's default 32 KiB read limit
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-10-10)
 
 Initial version.
 
