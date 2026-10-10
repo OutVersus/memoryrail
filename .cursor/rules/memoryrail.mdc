@@ -12,17 +12,18 @@ _Generated from `.memoryrail/`. Do not edit between these markers: change the me
 - [CON-c9af] **Format changes must update docs/SPEC.md and spec/memory.schema.json, then be copied to memoryrail-si** — The website (private repo memoryrail-si) serves copies of the spec and the JSON Schema at memoryrail.si/spec. If the copies drift, the published spec is wrong. Copy both files there and redeploy after any format change. (files: docs/SPEC.md, spec/memory.schema.json)
 
 ### Decisions
+- [DEC-2e7c] **Client setup docs come from vendor docs, not memory; say what was not run** — docs/CLIENTS.md was written from the official Codex, VS Code and GitHub Copilot docs (checked 2026-10-10) and says plainly that we have not run Codex or Copilot against MemoryRail. Re-check the sources when a client changes; do not add a client config we have not read in its doc… (files: docs/CLIENTS.md)
 - [DEC-25f4] **Search is lexical BM25, no embeddings yet** — Still lexical. Keeps the CLI dependency-light and offline. Semantic recall is planned as an optional layer. Documented as a limitation in the README and FAQ. (files: src/search.ts)
 - [DEC-e952] **Gate agent writes with config review agents instead of always** — Default stays off: git review is enough for solo use, and a gate adds friction. When on, durable types written over MCP are proposed until a human approves. Proposals never retire the memory they supersede until approved. (files: src/store.ts, src/mcp.ts)
 - [DEC-7e9e] **Ideas from agent-memory, projectmem and Memory Trail are reimplemented, never copied** — Licenses differ (Apache-2.0, MIT, CC BY 4.0). We borrowed concepts only: precheck and doctor (projectmem), review gate, secret scan and install (agent-memory), short citable refs and stop-on-conflict (Memory Trail). Keep it that way; credit them in the README. (files: README.md)
 - [DEC-8755] **Project memory is plain Markdown in the repo** — No database or hosted service: files are reviewable in PRs, travel with clones, and need no account. Anything that breaks this property is out of scope for the core. (files: docs/SPEC.md)
 
 ### Gotchas
+- [GOT-81a2] **Codex reads at most 32 KiB of AGENTS.md by default** — project_doc_max_bytes defaults to 32 KiB across the whole instruction chain, so a large generated block gets cut off silently. doctor warns above 32 KiB. Keep per-memory text short in sync output. (files: src/sync.ts, src/doctor.ts)
 - [GOT-e8c2] **precheck --fail must ignore matches that are only a pinned rule** — Pinned constraints are always listed, so failing on any match would block every commit when used as a git hook. Fail only when a memory matched by file or by plan. (files: src/cli.ts, src/precheck.ts)
 - [GOT-f758] **Windows installs can miss rollup's native binary** — npm optional-dependency bug (npm/cli#4828): vitest fails with 'Cannot find module @rollup/rollup-win32-x64-msvc'. Fix: npm install --no-save @rollup/rollup-win32-x64-msvc@<rollup version>.
 
 ### Open threads
-- [THR-1d30] **Write setup docs for Codex, Copilot and other MCP clients** — memoryrail install only writes Claude Code (.mcp.json) and Cursor (.cursor/mcp.json) configs. Document and verify the config for other clients before claiming support; do not guess their formats. Tools that read AGENTS.md already get the generated summary from sync.
 - [THR-4c30] **Publish releases by hand until NPM_TOKEN is set** — 0.1.0 was published manually (npm login with 2FA, then npm publish --access public). The release workflow publishes on a v* tag only when the NPM_TOKEN repo secret exists, and skips if the version is already on npm. To automate: create an npm automation token and add it as the N…
 
 How to use this memory:

@@ -86,11 +86,17 @@ export interface SyncChange {
   action: "created" | "updated" | "unchanged";
 }
 
+/** Codex stops reading AGENTS.md after this many bytes by default (project_doc_max_bytes). */
+export const CODEX_DOC_LIMIT_BYTES = 32 * 1024;
+
 export function sync(store: Store, opts: { check?: boolean; targets?: Target[] } = {}): SyncChange[] {
   const block = renderBlock(store.list());
   const changes: SyncChange[] = [];
   for (const t of opts.targets ?? DEFAULT_TARGETS) {
-    const abs = path.join(store.root, t.path);
+    const abs = path.resolve(store.root, t.path);
+    if (!abs.startsWith(store.root + path.sep)) {
+      throw new Error(`refusing to write outside the repository: ${t.path}`);
+    }
     const existing = fs.existsSync(abs) ? fs.readFileSync(abs, "utf8").replace(/\r\n/g, "\n") : null;
     const next = applyBlock(existing, block, t.preamble);
     if (existing === next) {

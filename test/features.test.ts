@@ -217,3 +217,35 @@ describe("doctor", () => {
     expect(checks.filter((c) => c.status !== "ok")).toEqual([]);
   });
 });
+
+describe("sync extra targets", () => {
+  it("writes the managed block into an extra file and keeps the rest", () => {
+    store.add({ type: "constraint", title: "Always run the tests" });
+    const rel = ".github/copilot-instructions.md";
+    fs.mkdirSync(path.join(dir, ".github"));
+    fs.writeFileSync(path.join(dir, rel), "# Repo instructions\n\nBe concise.\n");
+    sync(store, { targets: [{ path: rel }] });
+    const text = fs.readFileSync(path.join(dir, rel), "utf8");
+    expect(text.startsWith("# Repo instructions\n\nBe concise.")).toBe(true);
+    expect(text).toContain("Always run the tests");
+    expect(sync(store, { targets: [{ path: rel }] })[0]?.action).toBe("unchanged");
+  });
+
+  it("refuses to write outside the repository", () => {
+    expect(() => sync(store, { targets: [{ path: "../escape.md" }] })).toThrow(/outside the repository/);
+    expect(() => sync(store, { targets: [{ path: path.join(os.tmpdir(), "abs.md") }] })).toThrow(/outside the repository/);
+    expect(fs.existsSync(path.join(dir, "..", "escape.md"))).toBe(false);
+  });
+});
+
+describe("doctor AGENTS.md size", () => {
+  it("warns when AGENTS.md is larger than Codex reads by default", () => {
+    store.add({ type: "decision", title: "Small" });
+    sync(store);
+    expect(doctor(store).some((c) => c.name === "size")).toBe(false);
+    fs.appendFileSync(path.join(dir, "AGENTS.md"), "x".repeat(33 * 1024));
+    const warn = doctor(store).find((c) => c.name === "size");
+    expect(warn?.status).toBe("warn");
+    expect(warn?.detail).toMatch(/32 KiB/);
+  });
+});

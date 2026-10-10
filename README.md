@@ -72,6 +72,8 @@ git add .memoryrail AGENTS.md CLAUDE.md .mcp.json && git commit -m "Add project 
 
 ## Connect an agent (MCP)
 
+Setup for **Claude Code, Cursor, OpenAI Codex and GitHub Copilot** (VS Code, CLI and the cloud agent) is in [docs/CLIENTS.md](docs/CLIENTS.md). The short version for Claude Code and Cursor:
+
 ```sh
 # Claude Code or Cursor, written into the repo's own config (keeps other servers)
 memoryrail install claude      # .mcp.json
@@ -119,7 +121,7 @@ memoryrail review | approve <id>... [--all] | reject <id>...
 memoryrail config review [off|agents]
 memoryrail handoff --summary <text> [--next <step>]... [--title ..] [--link ..]
 memoryrail resume
-memoryrail sync [--check]
+memoryrail sync [--check] [--also <path>]...
 memoryrail lint [--strict] [--no-git] [--json]
 memoryrail doctor
 memoryrail install <claude|cursor|all> [--npx]
@@ -159,7 +161,8 @@ memoryrail precheck --staged --fail || echo "Review the memories above before co
 - **Search is lexical** (BM25 over title, tags, links and body, with a mild recency boost). It has no synonym or semantic matching, so `recall "database"` will not find a memory that only says "Postgres". Write titles that state the conclusion in the words you would search for, and use tags. Optional embeddings are planned.
 - `maybe-stale` relies on git history; it is skipped outside a git repository.
 - **The secret scanner is a pattern check, not a guarantee.** It catches common key formats and `password = ...` assignments, and it will miss secrets in unusual shapes. Treat it as a safety net, and don't paste credentials into memory.
-- `install` configures Claude Code and Cursor only. Other MCP clients need the config added by hand (see above).
+- `install` configures Claude Code and Cursor only. For Codex and Copilot, follow [docs/CLIENTS.md](docs/CLIENTS.md); those snippets come from the vendors' documentation and haven't been run against MemoryRail by us.
+- Codex stops reading `AGENTS.md` after 32 KiB by default. `memoryrail doctor` warns when yours gets that large.
 - This is an early release (0.x). The format and commands may change before 1.0, and it has had little use on real projects so far. Please open issues.
 - The memory is only as good as what agents and people record. MemoryRail makes recording cheap and reviewable; it does not do it for you.
 

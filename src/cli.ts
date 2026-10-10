@@ -11,7 +11,7 @@ import { precheck } from "./precheck.js";
 import { refOf } from "./refs.js";
 import { recall, renderMemory } from "./search.js";
 import { Store, DIR_NAME, initRoot, openStore, writeConfig } from "./store.js";
-import { sync } from "./sync.js";
+import { DEFAULT_TARGETS, sync } from "./sync.js";
 import { VERSION } from "./version.js";
 import { isMemoryType, MEMORY_TYPES, type Memory, type MemoryType } from "./types.js";
 
@@ -50,6 +50,8 @@ Commands:
   resume                       Print a prompt that brings a fresh agent up to speed
   sync                         Write AGENTS.md, CLAUDE.md and .cursor/rules from memory
       --check                    Exit 1 if generated files are out of date (for CI)
+      --also <path>              Also write the block into this file (repeatable), e.g.
+                                 .github/copilot-instructions.md
   lint                         Find stale links, duplicates, and broken files
       --strict                   Treat warnings as errors   --no-git   --json
   doctor                       Health check: valid, safe, synced, and reachable by agents
@@ -332,8 +334,9 @@ async function run(argv: string[]): Promise<number> {
     }
 
     case "sync": {
-      const { values } = parse({ check: { type: "boolean" } });
-      const changes = sync(openStore(), { check: values.check });
+      const { values } = parse({ check: { type: "boolean" }, also: { type: "string", multiple: true } });
+      const targets = [...DEFAULT_TARGETS, ...(values.also ?? []).map((p) => ({ path: p }))];
+      const changes = sync(openStore(), { check: values.check, targets });
       const pending = changes.filter((c) => c.action !== "unchanged");
       for (const c of changes) out(`${values.check && c.action !== "unchanged" ? "out of date" : c.action}: ${c.path}`);
       if (values.check && pending.length) {

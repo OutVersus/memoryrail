@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { CLIENT_FILES, isInstalled, type Client } from "./install.js";
 import { lint } from "./lint.js";
-import { sync } from "./sync.js";
+import { CODEX_DOC_LIMIT_BYTES, sync } from "./sync.js";
 import { DIR_NAME, FORMAT_VERSION, type Store } from "./store.js";
 
 export interface Check {
@@ -42,6 +42,15 @@ export function doctor(store: Store): Check[] {
   const drift = sync(store, { check: true }).filter((c) => c.action !== "unchanged");
   if (drift.length) add("warn", "sync", `${drift.map((d) => d.path).join(", ")} out of date; run \`memoryrail sync\``);
   else add("ok", "sync", "AGENTS.md, CLAUDE.md and Cursor rules are up to date");
+
+  try {
+    const bytes = fs.statSync(path.join(store.root, "AGENTS.md")).size;
+    if (bytes > CODEX_DOC_LIMIT_BYTES) {
+      add("warn", "size", `AGENTS.md is ${Math.round(bytes / 1024)} KiB; Codex stops reading it after 32 KiB by default. Archive stale memories or raise project_doc_max_bytes`);
+    }
+  } catch {
+    /* no AGENTS.md yet; the sync check above already says so */
+  }
 
   const wired = (Object.keys(CLIENT_FILES) as Client[]).filter((c) => isInstalled(store.root, c));
   if (wired.length) add("ok", "agents", `MCP server registered for: ${wired.join(", ")}`);

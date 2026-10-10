@@ -2,9 +2,9 @@
 id: "20261010-write-setup-docs-for-codex-copilot-and-other-mcp"
 type: "thread"
 title: "Write setup docs for Codex, Copilot and other MCP clients"
-status: "active"
+status: "resolved"
 created: "2026-10-10T02:25:53.937Z"
-updated: "2026-10-10T02:25:53.937Z"
+updated: "2026-10-10T04:16:00.878Z"
 tags: ["docs"]
 links: []
 ---
