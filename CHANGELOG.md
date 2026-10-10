@@ -1,13 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- **Optional semantic search.** `memoryrail embeddings setup | status | index | explain | off` adds matching by meaning to `recall` and `precheck` (CLI and MCP), using any OpenAI-compatible embeddings endpoint such as a local Ollama. Off by default; no new dependencies; falls back to keyword search if the endpoint is unreachable
-- Non-local endpoints are refused unless `--allow-remote`; API keys are read from a named environment variable and never stored; the vector index is a git-ignored cache in `.memoryrail/index/`
-- A query with no real answer matches nothing (minimum similarity, closeness to the best match, and contrast with the median)
-- `--no-semantic` on `recall` and `precheck`; `doctor` reports semantic search status and flags remote endpoints
-- Spec: optional `embeddings` config, `.memoryrail/.gitignore`, derived `index/`
-
 ## 0.1.1 (2026-10-10)
 
 - Setup guide for OpenAI Codex and GitHub Copilot (VS Code, CLI, cloud agent): `docs/CLIENTS.md`

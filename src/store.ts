@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parse, stringify } from "./frontmatter.js";
-import { parseEmbeddingsConfig, type EmbeddingsConfig } from "./embeddings.js";
 import { REF_PATTERN, refOf } from "./refs.js";
 import { SecretError, scanSecrets } from "./secrets.js";
 import {
@@ -28,8 +27,6 @@ export interface Config {
    * `memoryrail approve`. `off`: they are active immediately (git review only).
    */
   review: "off" | "agents";
-  /** Optional semantic search. Absent means keyword search only. */
-  embeddings?: EmbeddingsConfig;
 }
 
 export function readConfig(root: string): Config {
@@ -40,13 +37,10 @@ export function readConfig(root: string): Config {
   } catch {
     /* fall through to defaults */
   }
-  const config: Config = {
+  return {
     version: typeof raw["version"] === "number" ? raw["version"] : FORMAT_VERSION,
     review: raw["review"] === "agents" ? "agents" : "off",
   };
-  const embeddings = parseEmbeddingsConfig(raw["embeddings"]);
-  if (embeddings) config.embeddings = embeddings;
-  return config;
 }
 
 export function writeConfig(root: string, config: Config): void {
@@ -72,18 +66,8 @@ export function initRoot(root: string): { created: boolean } {
   fs.mkdirSync(path.join(base, MEMORIES_DIR), { recursive: true });
   if (fs.existsSync(config)) return { created: false };
   writeConfig(root, { version: FORMAT_VERSION, review: "off" });
-  ensureIndexIgnored(root);
   fs.writeFileSync(path.join(base, MEMORIES_DIR, ".gitkeep"), "");
   return { created: true };
-}
-
-/** The embeddings index is a derived cache. Keep it out of git. */
-export function ensureIndexIgnored(root: string): void {
-  const file = path.join(root, DIR_NAME, ".gitignore");
-  const existing = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
-  if (existing.split(/\r?\n/).some((l) => l.trim() === "index/")) return;
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, existing + (existing && !existing.endsWith("\n") ? "\n" : "") + "# Derived cache (optional semantic search). Rebuilt from the memories.\nindex/\n");
 }
 
 export function slugify(s: string): string {

@@ -3,7 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { doctor } from "./doctor.js";
-import { EmbeddingsUsageError, runEmbeddings } from "./embeddings-cmd.js";
 import { stagedFiles } from "./git.js";
 import { handoffToMemory, resumePrompt } from "./handoff.js";
 import { CLIENT_FILES, installMcp, type Client } from "./install.js";
@@ -11,7 +10,6 @@ import { lint } from "./lint.js";
 import { precheck } from "./precheck.js";
 import { refOf } from "./refs.js";
 import { recall, renderMemory } from "./search.js";
-import { semanticScores } from "./semantic.js";
 import { Store, DIR_NAME, initRoot, openStore, writeConfig } from "./store.js";
 import { DEFAULT_TARGETS, sync } from "./sync.js";
 import { VERSION } from "./version.js";
@@ -36,11 +34,9 @@ Commands:
   precheck [plan]              Before acting: which rules, failed attempts and gotchas apply?
       --file <path>              Repeatable   --staged (use files staged in git)
       --fail                     Exit 3 if anything relevant is found (for git hooks)   --json
-      --no-semantic              Keyword search only, even if semantic search is on
   recall [query]               Search memories, ranked and token-budgeted
       --type <t>                 Repeatable filter
       --limit <n>   --budget <tokens>   --all (include superseded/archived)   --json
-      --no-semantic              Keyword search only, even if semantic search is on
   list                         List memories (--type, --all, --json)
   show <id>                    Print one memory (id, prefix, or ref like DEC-a3f9)
   review                       Show memories waiting for approval
@@ -58,7 +54,6 @@ Commands:
                                  .github/copilot-instructions.md
   lint                         Find stale links, duplicates, and broken files
       --strict                   Treat warnings as errors   --no-git   --json
-  embeddings <command>         Optional semantic search (setup, status, index, explain, off)
   doctor                       Health check: valid, safe, synced, and reachable by agents
   install <claude|cursor|all>  Register the MCP server in the repo's client config (--npx)
   serve                      Run the MCP server over stdio
@@ -86,9 +81,6 @@ function toInt(v: string | undefined, name: string): number | undefined {
   if (!Number.isInteger(n) || n <= 0) throw new UsageError(`--${name} must be a positive integer`);
   return n;
 }
-
-const warnToStderr = (m: string) => process.stderr.write(`memoryrail: ${m}
-`);
 
 function out(s: string): void {
   process.stdout.write(s.endsWith("\n") ? s : s + "\n");
@@ -161,7 +153,6 @@ async function run(argv: string[]): Promise<number> {
         staged: { type: "boolean" },
         fail: { type: "boolean" },
         json: { type: "boolean" },
-        "no-semantic": { type: "boolean" },
       });
       const store = openStore();
       const files = [...(values.file ?? []), ...(values.staged ? stagedFiles(store.root) : [])];
@@ -169,8 +160,7 @@ async function run(argv: string[]): Promise<number> {
       if (!plan.trim() && !files.length) {
         throw new UsageError('usage: memoryrail precheck "<what you plan to do>" [--file <path>]... | --staged');
       }
-      const semantic = values["no-semantic"] ? null : await semanticScores(store, plan, { warn: warnToStderr });
-      const result = precheck(store.list(), { plan, files, semantic: semantic ?? undefined });
+      const result = precheck(store.list(), { plan, files });
       out(values.json ? JSON.stringify(result.warnings.map((w) => ({ ref: refOf(w.memory), reasons: w.reasons, memory: w.memory })), null, 2) : result.rendered);
       // Pinned rules are always listed; they alone must not fail a hook, or every commit would be blocked.
       const specific = result.warnings.some((w) => w.reasons.some((r) => r !== "pinned rule"));
@@ -235,10 +225,6 @@ async function run(argv: string[]): Promise<number> {
       return 0;
     }
 
-    case "embeddings": {
-      return runEmbeddings(rest, openStore());
-    }
-
     case "doctor": {
       parse({});
       const checks = doctor(openStore());
@@ -269,14 +255,9 @@ async function run(argv: string[]): Promise<number> {
         budget: { type: "string" },
         all: { type: "boolean" },
         json: { type: "boolean" },
-        "no-semantic": { type: "boolean" },
       });
-      const recallStore = openStore();
-      const recallQuery = positionals.join(" ");
-      const recallSemantic = values["no-semantic"] ? null : await semanticScores(recallStore, recallQuery, { warn: warnToStderr });
-      const result = recall(recallStore.list(), {
-        semantic: recallSemantic ?? undefined,
-        query: recallQuery,
+      const result = recall(openStore().list(), {
+        query: positionals.join(" "),
         types: parseTypes(values.type),
         limit: toInt(values.limit, "limit"),
         budget: toInt(values.budget, "budget"),
@@ -395,6 +376,6 @@ run(process.argv.slice(2)).then(
   (err: unknown) => {
     const msg = err instanceof Error ? err.message : String(err);
     process.stderr.write(`memoryrail: ${msg}\n`);
-    process.exitCode = err instanceof UsageError || err instanceof EmbeddingsUsageError ? 2 : 1;
+    process.exitCode = err instanceof UsageError ? 2 : 1;
   },
 );

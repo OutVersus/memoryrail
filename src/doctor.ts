@@ -1,9 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { CLIENT_FILES, isInstalled, type Client } from "./install.js";
-import { isLocalUrl } from "./embeddings.js";
 import { lint } from "./lint.js";
-import { indexStatus } from "./semantic.js";
 import { CODEX_DOC_LIMIT_BYTES, sync } from "./sync.js";
 import { DIR_NAME, FORMAT_VERSION, type Store } from "./store.js";
 
@@ -52,17 +50,6 @@ export function doctor(store: Store): Check[] {
     }
   } catch {
     /* no AGENTS.md yet; the sync check above already says so */
-  }
-
-  const emb = config.embeddings;
-  if (!emb) {
-    add("ok", "search", "keyword search only (optional semantic search: memoryrail embeddings setup)");
-  } else if (!isLocalUrl(emb.baseUrl)) {
-    add("warn", "search", `semantic search sends memory text to ${new URL(emb.baseUrl).host}, which is not a local address`);
-  } else {
-    const s = indexStatus(store, emb);
-    if (s.exists && !s.matchesConfig) add("warn", "search", "semantic index was built with a different model or endpoint; run `memoryrail embeddings index --rebuild`");
-    else add("ok", "search", `semantic search on (${emb.model}, local); ${s.indexed}/${s.total} memories indexed`);
   }
 
   const wired = (Object.keys(CLIENT_FILES) as Client[]).filter((c) => isInstalled(store.root, c));

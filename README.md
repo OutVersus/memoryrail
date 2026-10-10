@@ -13,7 +13,7 @@ Decisions, constraints, gotchas and failed attempts live in your repo as plain M
 - **Travels with the repo.** Clone it and the memory comes along. Branches carry their own memory.
 - **One source, every agent.** `memoryrail sync` keeps `AGENTS.md`, `CLAUDE.md` and `.cursor/rules` in step, so you maintain one memory instead of three config files.
 - **Safe to commit.** Text that looks like a secret is refused. An optional review gate holds agent-written memories until you approve them.
-- **Local and private.** No account and no server. No network calls unless you turn on the optional semantic search, which sends memory text to the embeddings endpoint *you* choose (a local one keeps it on your machine).
+- **Local and private.** No account, no server, no network calls.
 - **Stays honest.** Memories link to files; `memoryrail lint` flags the ones whose files changed or vanished. New decisions *supersede* old ones instead of overwriting them.
 
 > Status: **0.1, early.** The format is specified ([docs/SPEC.md](docs/SPEC.md)) and may change before 1.0.
@@ -156,38 +156,9 @@ memoryrail precheck --staged --fail || echo "Review the memories above before co
 - run: npx memoryrail lint --strict  # no stale links, duplicates, secrets or broken files
 ```
 
-## Semantic search (optional)
-
-By default, search matches words (BM25 over title, tags, links and body, with a mild recency boost), so `recall "database"` won't find a memory that only says "Postgres". Semantic search adds matching by meaning: "can we copy implementation from competitors" finds the memory titled "reimplemented, never copied".
-
-It works with any OpenAI-compatible embeddings endpoint. MemoryRail adds no dependency and downloads no model. With [Ollama](https://ollama.com) everything stays on your machine:
-
-```sh
-ollama pull nomic-embed-text
-memoryrail embeddings setup --url http://localhost:11434/v1 --model nomic-embed-text
-```
-
-- **Where it applies:** `recall` and `precheck`, from the CLI and over MCP. Keyword and semantic results are combined. `--no-semantic` forces keywords only.
-- **It never breaks search.** If the endpoint is down, search falls back to keywords and prints a warning to stderr.
-- **The index is a cache.** Vectors live in `.memoryrail/index/`, which is git-ignored and rebuilt from the memories. Only new or changed memories are re-embedded; switching models rebuilds it, so vectors from different models are never mixed.
-- **Commands:** `memoryrail embeddings setup | status | index [--rebuild] | explain "<query>" | off`.
-
-**Privacy.** Turning this on is the one case where MemoryRail talks to a network. The text of your memories, and your search queries, are sent to the endpoint you configure. A local address (localhost) keeps that on your machine. A remote one is refused unless you pass `--allow-remote`, and `doctor` flags it. For a hosted provider, also pass `--key-env <VAR>` to name the environment variable holding the API key; the key itself is never stored. Memory text is already screened for secrets when it is written, but treat anything in memory as something the provider will see.
-
-**Tuning.** How similar is "similar enough" depends on the model, so the threshold is configurable (`--min-similarity`, default 0.5). A match must also be close to the best match and stand out from the typical memory, so a query with no real answer matches nothing. Run `memoryrail embeddings explain "<query>"` to see every memory's score and adjust.
-
-**What we measured, and didn't.** On a 16-memory corpus (this project's own) with `nomic-embed-text` through Ollama, using 12 reworded questions that each have one right answer:
-
-| | found the right memory | results returned per query | share of results that were right |
-|---|---|---|---|
-| keyword search | 10 of 12 | 3.0 | 28% |
-| semantic search | 12 of 12 | 2.0 | 50% |
-
-Ten unrelated queries (weather, recipes, flights, ...) produced no false matches. Read this with care: it is a small sample on a small corpus, the closeness margin was tuned on these same 12 questions so the semantic numbers are optimistic, and the defaults were only tuned on this one model. Half of what semantic search returns is still not the answer you wanted. Expect a modest gain on small memories and a larger one as the memory grows and wording varies. We have **not** tested hosted providers. The index is a single JSON file read on every search, which is fine for hundreds of memories, not for tens of thousands.
-
 ## Limitations
 
-- **Search is keyword-based by default** (see Semantic search above to add matching by meaning). Without it, write titles that state the conclusion in the words you would search for, and use tags.
+- **Search is lexical** (BM25 over title, tags, links and body, with a mild recency boost). It has no synonym or semantic matching, so `recall "database"` will not find a memory that only says "Postgres". Write titles that state the conclusion in the words you would search for, and use tags. This is deliberate: it keeps MemoryRail small, offline and dependency-light.
 - `maybe-stale` relies on git history; it is skipped outside a git repository.
 - **The secret scanner is a pattern check, not a guarantee.** It catches common key formats and `password = ...` assignments, and it will miss secrets in unusual shapes. Treat it as a safety net, and don't paste credentials into memory.
 - `install` configures Claude Code and Cursor only. For Codex and Copilot, follow [docs/CLIENTS.md](docs/CLIENTS.md); those snippets come from the vendors' documentation and haven't been run against MemoryRail by us.
