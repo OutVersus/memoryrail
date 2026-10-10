@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://memoryrail.si/spec/memory.schema.json",
+  "title": "MemoryRail memory (frontmatter)",
+  "description": "Schema for the frontmatter of a file in .memoryrail/memories/. Format version 1.",
+  "type": "object",
+  "required": ["id", "type", "title", "status", "created", "updated"],
+  "additionalProperties": true,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]+$",
+      "description": "Must equal the file name without .md."
+    },
+    "type": { "enum": ["decision", "constraint", "gotcha", "attempt", "thread", "session"] },
+    "title": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["active", "proposed", "superseded", "archived", "resolved"] },
+    "created": { "type": "string", "format": "date-time" },
+    "updated": { "type": "string", "format": "date-time" },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "links": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Repo-relative POSIX paths. Must not escape the repository."
+    },
+    "pinned": { "type": "boolean" },
+    "supersedes": { "type": "string" },
+    "superseded_by": { "type": "string" }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "name": "memoryrail",
+  "version": "0.1.0",
+  "description": "Git-native project memory for coding agents. Plain Markdown in your repo, readable by people and any MCP-capable agent.",
+  "license": "MIT",
+  "type": "module",
+  "homepage": "https://memoryrail.si",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OutVersus/memoryrail.git"
+  },
+  "keywords": [
+    "mcp",
+    "ai-agents",
+    "memory",
+    "claude-code",
+    "cursor",
+    "agents-md",
+    "context"
+  ],
+  "bin": {
+    "memoryrail": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "spec",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "bugs": {
+    "url": "https://github.com/OutVersus/memoryrail/issues"
+  }
+}
