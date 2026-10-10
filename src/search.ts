@@ -1,5 +1,5 @@
 import { refOf } from "./refs.js";
-import type { Memory, MemoryType } from "./types.js";
+import type { Memory, MemoryType, Semantic } from "./types.js";
 
 const STOPWORDS = new Set(
   "a an and are as at be by for from has have how in is it its of on or that the this to was we what when where which with you your do does did not no can i".split(
@@ -33,6 +33,8 @@ export interface RecallOptions {
   budget?: number;
   includeInactive?: boolean;
   now?: Date;
+  /** Optional semantic scores (see semantic.ts). Absent means keyword search only. */
+  semantic?: Semantic;
 }
 
 export interface Hit {
@@ -86,6 +88,43 @@ export function rank(memories: Memory[], query: string, now: Date = new Date()):
     .sort((a, b) => b.score - a.score || Date.parse(b.memory.updated) - Date.parse(a.memory.updated));
 }
 
+/**
+ * Memories that are semantically close to the query, best first.
+ * A memory counts if it clears the absolute floor AND is within `margin` of
+ * the best match, AND (with 3+ memories) the best match stands out from the
+ * median by `contrast`. Together these stop a query with no real answer from
+ * matching everything.
+ * Similarity scales differ by model, so the floor is configurable.
+ */
+export function semanticCandidates(pool: Memory[], sem: Semantic): Memory[] {
+  const scored = pool
+    .map((m) => ({ m, s: sem.scores.get(m.id) }))
+    .filter((x): x is { m: Memory; s: number } => x.s !== undefined)
+    .sort((a, b) => b.s - a.s);
+  const top = scored[0]?.s;
+  if (top === undefined) return [];
+  if (scored.length >= 3) {
+    const median = scored[Math.floor(scored.length / 2)]!.s;
+    if (top - median < sem.contrast) return [];
+  }
+  const cutoff = Math.max(sem.minSimilarity, top - sem.margin);
+  return scored.filter((x) => x.s >= cutoff).map((x) => x.m);
+}
+
+const RRF_K = 60;
+
+/** Reciprocal rank fusion: a memory ranked well by either list rises, and by both rises most. */
+function fuse(lexical: Hit[], semantic: Memory[]): Hit[] {
+  const byId = new Map<string, Hit>();
+  const add = (m: Memory, rank: number) => {
+    const prev = byId.get(m.id);
+    byId.set(m.id, { memory: m, score: (prev?.score ?? 0) + 1 / (RRF_K + rank + 1) });
+  };
+  lexical.forEach((h, i) => add(h.memory, i));
+  semantic.forEach((m, i) => add(m, i));
+  return [...byId.values()].sort((a, b) => b.score - a.score || Date.parse(b.memory.updated) - Date.parse(a.memory.updated));
+}
+
 export function renderMemory(m: Memory): string {
   const head = `### [${refOf(m)}] ${m.title}`;
   const meta: string[] = [`${m.type}`, `id: ${m.id}`];
@@ -109,9 +148,8 @@ export function recall(all: Memory[], opts: RecallOptions = {}): RecallResult {
     .map((memory) => ({ memory, score: Number.POSITIVE_INFINITY }));
   const rest = pool.filter((m) => !m.pinned);
   const query = opts.query?.trim() ?? "";
-  const ranked = query
-    ? rank(rest, query, opts.now).filter((h) => h.score > 0.01)
-    : rank(rest, "", opts.now);
+  const lexical = query ? rank(rest, query, opts.now).filter((h) => h.score > 0.01) : rank(rest, "", opts.now);
+  const ranked = query && opts.semantic ? fuse(lexical, semanticCandidates(rest, opts.semantic)) : lexical;
 
   const ordered = [...pinned, ...ranked];
   const hits: Hit[] = [];

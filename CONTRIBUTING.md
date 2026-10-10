@@ -28,7 +28,7 @@ and read what it returns. If you make a decision or hit a trap, record it with `
 
 - **Format changes** (anything in `docs/SPEC.md` or `spec/memory.schema.json`) must update both files, add a test, and add a line to `CHANGELOG.md`. The website serves copies of the spec, which the maintainers refresh.
 - **No new runtime dependencies** without a strong reason. The core depends only on the MCP SDK and zod.
-- **No network calls** from the CLI or server. "Nothing leaves your machine" is a promise.
+- **No network calls**, with one exception: the opt-in embeddings client (`src/embeddings.ts`), which only talks to the endpoint the user configured and refuses non-local addresses without `--allow-remote`. Everything else must stay offline. "Nothing leaves your machine unless you turn semantic search on and point it elsewhere" is a promise.
 - **Tests** for behaviour you add or fix. `test/core.test.ts` covers the store, search, lint, sync and handoff; `test/features.test.ts` covers refs, secrets, review, precheck, install and doctor.
 - **Say what you didn't verify** in the PR description.
 

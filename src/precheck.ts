@@ -1,6 +1,6 @@
 import { refOf } from "./refs.js";
-import { rank } from "./search.js";
-import { DURABLE_TYPES, type Memory, type MemoryType } from "./types.js";
+import { rank, semanticCandidates } from "./search.js";
+import { DURABLE_TYPES, type Memory, type MemoryType, type Semantic } from "./types.js";
 
 export interface Warning {
   memory: Memory;
@@ -14,6 +14,8 @@ export interface PrecheckInput {
   files?: string[];
   limit?: number;
   now?: Date;
+  /** Optional semantic scores for `plan`. Catches memories that mean the same thing in other words. */
+  semantic?: Semantic;
 }
 
 export interface PrecheckResult {
@@ -52,6 +54,8 @@ export function precheck(all: Memory[], input: PrecheckInput): PrecheckResult {
   const plan = input.plan?.trim() ?? "";
   const scores = new Map<string, number>();
   if (plan) for (const h of rank(pool, plan, input.now)) if (h.score > 0.01) scores.set(h.memory.id, h.score);
+  const similar = new Set<string>();
+  if (plan && input.semantic) for (const m of semanticCandidates(pool, input.semantic)) similar.add(m.id);
 
   const warnings: Warning[] = [];
   for (const m of pool) {
@@ -60,11 +64,15 @@ export function precheck(all: Memory[], input: PrecheckInput): PrecheckResult {
     const hits = touching(m, files);
     if (hits.length) reasons.push(`about ${hits.join(", ")}`);
     if (scores.has(m.id)) reasons.push("matches your plan");
+    else if (similar.has(m.id)) reasons.push("similar in meaning to your plan");
     if (reasons.length) warnings.push({ memory: m, reasons });
   }
 
   const weight = (w: Warning) =>
-    ORDER.indexOf(w.memory.type) * 10 - (touching(w.memory, files).length ? 5 : 0) - (scores.get(w.memory.id) ?? 0) / 100;
+    ORDER.indexOf(w.memory.type) * 10 -
+    (touching(w.memory, files).length ? 5 : 0) -
+    (scores.get(w.memory.id) ?? 0) / 100 -
+    (input.semantic?.scores.get(w.memory.id) ?? 0) / 1000;
   warnings.sort((a, b) => weight(a) - weight(b) || a.memory.id.localeCompare(b.memory.id));
   const shown = warnings.slice(0, input.limit ?? 12);
 

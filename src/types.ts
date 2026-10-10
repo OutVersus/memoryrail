@@ -45,3 +45,13 @@ export function isMemoryType(v: unknown): v is MemoryType {
 export function isStatus(v: unknown): v is Status {
   return typeof v === "string" && (STATUSES as readonly string[]).includes(v);
 }
+
+/** Semantic similarity of each memory to a query, supplied by the optional embeddings layer. */
+export interface Semantic {
+  /** Cosine similarity per memory id. */
+  scores: Map<string, number>;
+  minSimilarity: number;
+  margin: number;
+  /** The best match must beat the typical (median) memory by this much, or nothing matches. */
+  contrast: number;
+}

@@ -5,6 +5,7 @@ import { handoffToMemory, resumePrompt } from "./handoff.js";
 import { precheck } from "./precheck.js";
 import { refOf } from "./refs.js";
 import { recall } from "./search.js";
+import { semanticScores } from "./semantic.js";
 import type { Store } from "./store.js";
 import { DURABLE_TYPES, MEMORY_TYPES } from "./types.js";
 import { VERSION } from "./version.js";
@@ -18,15 +19,19 @@ const fail = (e: unknown) => ({
 });
 
 /** Run a tool body, turning thrown errors into MCP tool errors instead of crashing the server. */
-function guard<A>(fn: (args: A) => string): (args: A) => ReturnType<typeof text> | ReturnType<typeof fail> {
-  return (args) => {
+function guard<A>(fn: (args: A) => string | Promise<string>): (args: A) => Promise<ReturnType<typeof text> | ReturnType<typeof fail>> {
+  return async (args) => {
     try {
-      return text(fn(args));
+      return text(await fn(args));
     } catch (e) {
       return fail(e);
     }
   };
 }
+
+// stdout carries the protocol; diagnostics go to stderr.
+const warn = (m: string) => process.stderr.write(`memoryrail: ${m}
+`);
 
 export function createServer(store: Store): McpServer {
   const server = new McpServer({ name: "memoryrail", version: VERSION });
@@ -40,8 +45,9 @@ export function createServer(store: Store): McpServer {
       limit: z.number().int().positive().max(50).optional(),
       budget: z.number().int().positive().max(20000).optional().describe("Approximate token budget for the response."),
     },
-    guard(({ query, types, limit, budget }) => {
-      const r = recall(store.list(), { query, types, limit, budget });
+    guard(async ({ query, types, limit, budget }) => {
+      const semantic = query ? await semanticScores(store, query, { warn }) : null;
+      const r = recall(store.list(), { query, types, limit, budget, semantic: semantic ?? undefined });
       if (!r.hits.length) return "No matching memories.";
       return r.rendered + (r.truncated ? "\n\n(More results exist: raise limit or budget, or narrow the query.)" : "");
     }),
@@ -75,7 +81,10 @@ export function createServer(store: Store): McpServer {
       plan: z.string().optional().describe("What you are about to do, in plain words."),
       files: z.array(z.string()).optional().describe("Repo-relative paths you are about to change."),
     },
-    guard(({ plan, files }) => precheck(store.list(), { plan, files }).rendered),
+    guard(async ({ plan, files }) => {
+      const semantic = plan ? await semanticScores(store, plan, { warn }) : null;
+      return precheck(store.list(), { plan, files, semantic: semantic ?? undefined }).rendered;
+    }),
   );
 
   server.tool(

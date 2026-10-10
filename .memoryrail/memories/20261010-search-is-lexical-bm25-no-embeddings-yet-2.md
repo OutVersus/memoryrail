@@ -2,12 +2,13 @@
 id: "20261010-search-is-lexical-bm25-no-embeddings-yet-2"
 type: "decision"
 title: "Search is lexical BM25, no embeddings yet"
-status: "active"
+status: "superseded"
 created: "2026-10-10T01:08:41.716Z"
-updated: "2026-10-10T01:08:41.716Z"
+updated: "2026-10-10T14:39:10.950Z"
 tags: ["search"]
 links: ["src/search.ts"]
 supersedes: "20261010-search-is-lexical-bm25-no-embeddings-yet"
+superseded_by: "20261010-semantic-search-is-opt-in-through-an-openai-comp"
 ---
 
 Still lexical. Keeps the CLI dependency-light and offline. Semantic recall is planned as an optional layer. Documented as a limitation in the README and FAQ.

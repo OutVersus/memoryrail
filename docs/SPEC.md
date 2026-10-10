@@ -7,9 +7,11 @@ MemoryRail stores project memory as plain files in a repository so that people, 
 ```
 .memoryrail/
   config.json              { "version": 1, "review": "off" }
+  .gitignore               index/        (see Semantic search)
   memories/
     20261010-use-drizzle-over-prisma.md
     20261010-session-2026-10-10-17-30.md
+  index/                   derived cache, never committed, not part of the format
 ```
 
 A repository is a MemoryRail project if it contains `.memoryrail/config.json`. Tools locate the nearest one by walking up from the working directory.
@@ -83,6 +85,16 @@ Memory is committed and replayed into model context, so tools MUST refuse to wri
 ## Precheck
 
 Given a plan (free text) and/or the files about to change, `precheck` returns the active `constraint`, `attempt`, `gotcha` and `decision` memories that apply, most binding first. A memory applies if it is a pinned constraint, if one of its `links` is the changed path or a directory containing it, or if its text matches the plan. Agents are instructed to cite what they rely on as `[per REF]` and to stop and ask if a plan conflicts with a constraint or decision.
+
+## Semantic search (optional)
+
+A tool MAY add matching by meaning on top of keyword search. If it does:
+
+- It is **off unless configured**. `config.json` may contain `"embeddings": { "baseUrl", "model", "apiKeyEnv"?, "dimensions"?, "minSimilarity"?, "allowRemote"? }`, naming an OpenAI-compatible `POST {baseUrl}/embeddings` endpoint. `apiKeyEnv` is the **name** of an environment variable; a key MUST NOT be written to `config.json`.
+- Memory text and queries are sent to that endpoint, so a tool MUST refuse a non-local `baseUrl` unless `allowRemote` is `true`, and SHOULD say plainly where text goes.
+- Vectors are a **derived cache** under `.memoryrail/index/`, which MUST be git-ignored (`.memoryrail/.gitignore` contains `index/`). The memory files remain the only source of truth, and deleting the cache loses nothing. Vectors from different models or endpoints MUST NOT be mixed.
+- Search MUST keep working when the endpoint is unreachable, falling back to keyword search.
+- How similar counts as "similar enough" is model-dependent, so tools SHOULD make the threshold configurable and SHOULD require that a match stand out from the other memories, so a query with no real answer matches nothing.
 
 ## Generated agent files
 

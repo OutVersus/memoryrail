@@ -21,3 +21,7 @@ export type { Check } from "./doctor.js";
 export { readConfig, writeConfig } from "./store.js";
 export type { Config } from "./store.js";
 export { VERSION } from "./version.js";
+export { Embedder, cosine, isLocalUrl, DEFAULT_MIN_SIMILARITY } from "./embeddings.js";
+export type { EmbeddingsConfig } from "./embeddings.js";
+export { semanticScores, refreshIndex, indexStatus } from "./semantic.js";
+export { semanticCandidates } from "./search.js";
